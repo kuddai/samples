@@ -1,5 +1,8 @@
 # Audio Video Synchronization Metric Prototype Demo
-You need special Chrome build to run this example.
+Shows a basic example of how to estimate delay between audio and video tracks
+in WebRTC.
+
+You will need a special Chrome build to run this example.
 
 Chromium changes:
 [https://chromium-review.googlesource.com/c/chromium/src/+/1881164](https://chromium-review.googlesource.com/c/chromium/src/+/1881164)
