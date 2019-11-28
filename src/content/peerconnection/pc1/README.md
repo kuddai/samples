@@ -1,4 +1,4 @@
-# AV Metric Prototype
+# Audio Video Synchronization Metric Prototype Demo
 You need special Chrome build to run this example.
 
 Chromium changes:
