@@ -11,11 +11,21 @@
 const startButton = document.getElementById('startButton');
 const callButton = document.getElementById('callButton');
 const hangupButton = document.getElementById('hangupButton');
+const delayButton = document.getElementById('delayButton');
 callButton.disabled = true;
 hangupButton.disabled = true;
+delayButton.disabled = true;
 startButton.addEventListener('click', start);
 callButton.addEventListener('click', call);
 hangupButton.addEventListener('click', hangup);
+delayButton.addEventListener('click', () => {
+  let [a, v] = pc2.getReceivers();
+  if (a) {
+    a.jitterBufferDelayHint = 2.0;
+    a.playoutDelayHint = 2.0;
+    delayButton.disabled = true;
+  }
+});
 
 let startTime;
 const localVideo = document.getElementById('localVideo');
@@ -79,6 +89,7 @@ function getSelectedSdpSemantics() {
 async function call() {
   callButton.disabled = true;
   hangupButton.disabled = false;
+  delayButton.disabled = false;
   console.log('Starting call');
   startTime = window.performance.now();
   const videoTracks = localStream.getVideoTracks();
@@ -163,6 +174,21 @@ function gotRemoteStream(e) {
   if (remoteVideo.srcObject !== e.streams[0]) {
     remoteVideo.srcObject = e.streams[0];
     console.log('pc2 received remote stream');
+    let audioBar = document.getElementById('remoteAudioBar');
+    let videoBar = document.getElementById('remoteVideoBar');
+
+    let [a, v] = pc2.getReceivers();
+    window.pid = setInterval(() => {
+      try {
+        let a_time = (a.getSynchronizationSources()[0].absoluteCaptureTimestamp / 1000.0).toFixed(2);
+        let v_time = (v.getSynchronizationSources()[0].absoluteCaptureTimestamp / 1000.0).toFixed(2);
+
+        audioBar.textContent = `a: ${a_time} s`;
+        videoBar.textContent = `v: ${v_time} s`;
+      } catch (e) {
+        console.error('interval error', e);
+      }
+    }, 100);
   }
 }
 
@@ -217,4 +243,5 @@ function hangup() {
   pc2 = null;
   hangupButton.disabled = true;
   callButton.disabled = false;
+  delayButton.disabled = true;
 }
