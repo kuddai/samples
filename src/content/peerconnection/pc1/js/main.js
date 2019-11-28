@@ -6,8 +6,6 @@
  *  tree.
  */
 
-'use strict';
-
 const startButton = document.getElementById('startButton');
 const callButton = document.getElementById('callButton');
 const hangupButton = document.getElementById('hangupButton');
@@ -30,6 +28,7 @@ delayButton.addEventListener('click', () => {
 let startTime;
 const localVideo = document.getElementById('localVideo');
 const remoteVideo = document.getElementById('remoteVideo');
+const remoteAudio = document.getElementById('remoteAudio');
 
 localVideo.addEventListener('loadedmetadata', function() {
   console.log(`Local video videoWidth: ${this.videoWidth}px,  videoHeight: ${this.videoHeight}px`);
@@ -112,7 +111,28 @@ async function call() {
   pc2.addEventListener('iceconnectionstatechange', e => onIceStateChange(pc2, e));
   pc2.addEventListener('track', gotRemoteStream);
 
-  localStream.getTracks().forEach(track => pc1.addTrack(track, localStream));
+  // Assume audio and video track here for demo purposes
+  // (actually order is not specified in standard but in Chrome it is
+  // returned in that order).
+  console.assert(localStream.getTracks().length === 2);
+  // Create separate streams to disable default 1:1 audio video synchronization.
+  // Other option would be to comment this line in Chrome:
+  // https://cs.chromium.org/chromium/src/third_party/webrtc/call/call.cc?l=1160&rcl=79685304182cd81f34c3d2b80527d4e8de92b04c
+  //
+  // It is a little bit hackish as there is no clear audio video
+  // synchronization guide in WebRTC. I think it is mentioned only once in the
+  // spec where it says something like "there is an internal slot for
+  // MediaStream which is responsible for synchronization of tracks attached to
+  // it with respect to ietf lips-sync spec". Then in practise lips-sync exists
+  // only 1:1 audio and video streams. But don't take my words too close, I
+  // might be easily wrong ¯\_(ツ)_/¯
+  const [audioTrack, videoTrack] = localStream.getTracks();
+  pc1AudioStream = new MediaStream();
+  pc1VideoStream = new MediaStream();
+  pc1.addTrack(audioTrack, pc1AudioStream);
+  pc1.addTrack(videoTrack, pc1VideoStream);
+
+  //.forEach(track => pc1.addTrack(track, localStream));
   console.log('Added local stream to pc1');
 
   try {
@@ -171,20 +191,32 @@ function onSetSessionDescriptionError(error) {
 }
 
 function gotRemoteStream(e) {
-  if (remoteVideo.srcObject !== e.streams[0]) {
-    remoteVideo.srcObject = e.streams[0];
+  console.log('kuddai gotRemoteStream e', e);
+  const remoteSink = e.track.kind === 'audio' ? remoteAudio : remoteVideo;
+  if (remoteSink.srcObject !== e.streams[0]) {
+    remoteSink.srcObject = e.streams[0];
     console.log('pc2 received remote stream');
-    let audioBar = document.getElementById('remoteAudioBar');
-    let videoBar = document.getElementById('remoteVideoBar');
+
+    if (pc2.getReceivers().length !== 2) {
+      return;
+    }
 
     let [a, v] = pc2.getReceivers();
+    let audioBar = document.getElementById('remoteAudioBar');
+    let videoBar = document.getElementById('remoteVideoBar');
+    let diffBar = document.getElementById('remoteDiffBar');
+
+    // Stop previous pulling.
+    clearInterval(window.pid);
     window.pid = setInterval(() => {
       try {
-        let a_time = (a.getSynchronizationSources()[0].absoluteCaptureTimestamp / 1000.0).toFixed(2);
-        let v_time = (v.getSynchronizationSources()[0].absoluteCaptureTimestamp / 1000.0).toFixed(2);
+        let a_time = (a.getSynchronizationSources()[0].absoluteCaptureTimestamp / 1000.0);
+        let v_time = (v.getSynchronizationSources()[0].absoluteCaptureTimestamp / 1000.0);
+        let d_time = v_time - a_time;
 
-        audioBar.textContent = `a: ${a_time} s`;
-        videoBar.textContent = `v: ${v_time} s`;
+        audioBar.textContent = `a: ${a_time.toFixed(2)} s`;
+        videoBar.textContent = `v: ${v_time.toFixed(2)} s`;
+        diffBar.textContent = `d: ${d_time.toFixed(2)} s`;
       } catch (e) {
         console.error('interval error', e);
       }

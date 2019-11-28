@@ -43,7 +43,14 @@ video#localVideo {
   left: 5px;
 }
 
-#remoteAudioBar, #remoteVideoBar {
+#remoteDiffBar {
+  position: absolute;
+  top: 45px;
+  left: 5px;
+}
+
+
+#remoteAudioBar, #remoteVideoBar, #remoteDiffBar {
   color: #1f2;
   font-weight: bold;
 }
