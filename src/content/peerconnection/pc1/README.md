@@ -33,9 +33,10 @@ Run example with any HTTP server. For e.g. assuming python 2.7:
 python -m SimpleHTTPServer 8123
 ```
 
-Go to `localhost:8123` and press `Start` and `Call` buttons. You should be able
-to see no delay between audio and video. Then press `Delay Audio By 2 Seconds`,
-2 seconds delay between audio and video should gradually appear.
+Go to `localhost:8123` (note localhost as you need secure context to request
+`getUserMedia`) and press `Start` and `Call` buttons. You should be able to see
+no delay between audio and video. Then press `Delay Audio By 2 Seconds`, 2
+seconds delay between audio and video should gradually appear.
 
 
 
